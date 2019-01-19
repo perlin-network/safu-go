@@ -6,6 +6,7 @@ import (
 	"github.com/perlin-network/safu-go/api"
 	"github.com/perlin-network/safu-go/etherscan"
 	"github.com/perlin-network/safu-go/log"
+	"github.com/perlin-network/safu-go/database"
 	"gopkg.in/urfave/cli.v1"
 	"gopkg.in/urfave/cli.v1/altsrc"
 	"os"
@@ -48,7 +49,7 @@ func main() {
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "db.path",
 			Value: "testdb",
-			Usage: "Load/initialize LevelDB store from `DB_PATH`.",
+			Usage: "Load/initialize LevelDB database from `DB_PATH`.",
 		}),
 		altsrc.NewBoolFlag(cli.BoolFlag{
 			Name:  "db.reset",
@@ -118,10 +119,12 @@ func runServer(c *Config) error {
 	// TODO: setup database
 	// TODO: setup main loop to watch the ledger
 
+
+	var store = database.NewTieDotStore(c.DatabasePath)
 	var esClient = etherscan.NewESClient("4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1")
 
 	// listen for api calls
-	api.Run(fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort), esClient)
+	api.Run(fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort), esClient, store)
 
 	return nil
 }
