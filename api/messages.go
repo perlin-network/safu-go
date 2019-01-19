@@ -22,5 +22,5 @@ type QueryAddressRequest struct {
 
 type QueryAddressResponse struct {
 	TargetAddress string `json:"target_address" validate:"required"`
-	TaintScore    int32  `json:"timestamp" validate:"required"`
+	TaintScore    int32  `json:"taint_score" validate:"required"`
 }
