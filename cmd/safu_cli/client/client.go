@@ -46,7 +46,7 @@ func NewClient(config *Config) (*Client, error) {
 
 func (client *Client) Register() (interface{}, error) {
 	return client.callWaveletLedger("custom", fmt.Sprintf(`{
-		"receipient": "%s",
+		"recipient": "%s",
 		"body": {
 			"Payload": "Register"
 		}
@@ -55,7 +55,7 @@ func (client *Client) Register() (interface{}, error) {
 
 func (client *Client) ResetRep(targetAddress string) (interface{}, error) {
 	return client.callWaveletLedger("custom", fmt.Sprintf(`{
-		"receipient": "%s",
+		"recipient": "%s",
 		"body": {
 			"PlusRep": {
 				"target_address": "%s"
@@ -66,7 +66,7 @@ func (client *Client) ResetRep(targetAddress string) (interface{}, error) {
 
 func (client *Client) PlusRep(targetAddress string, scamReportID string) (interface{}, error) {
 	return client.callWaveletLedger("custom", fmt.Sprintf(`{
-		"receipient": "%s",
+		"recipient": "%s",
 		"body": {
 			"PlusRep": {
 				"target_address": "%s",
@@ -78,7 +78,7 @@ func (client *Client) PlusRep(targetAddress string, scamReportID string) (interf
 
 func (client *Client) NegRep(targetAddress string, scamReportID string) (interface{}, error) {
 	return client.callWaveletLedger("custom", fmt.Sprintf(`{
-		"receipient": "%s",
+		"recipient": "%s",
 		"body": {
 			"NegRep": {
 				"target_address": "%s",
@@ -90,7 +90,7 @@ func (client *Client) NegRep(targetAddress string, scamReportID string) (interfa
 
 func (client *Client) Upgrade() (interface{}, error) {
 	return client.callWaveletLedger("custom", fmt.Sprintf(`{
-		"receipient": "%s",
+		"recipient": "%s",
 		"body": {
 			"Payload": "UpgradeToVIP"
 		}
@@ -99,7 +99,7 @@ func (client *Client) Upgrade() (interface{}, error) {
 
 func (client *Client) Deposit(depositAmount int64) (interface{}, error) {
 	return client.callWaveletLedger("transfer", fmt.Sprintf(`{
-		"receipient": "%s",
+		"recipient": "%s",
 		"amount": %d
 	}`, client.config.SmartContractAddress, depositAmount))
 }
@@ -134,7 +134,7 @@ func (client *Client) RegisterScamReport(scammerAddress string, victimAddress st
 	}
 	// 2. push the report id to the ledger
 	_, err = client.callWaveletLedger("custom", fmt.Sprintf(`{
-		"receipient": "%s",
+		"recipient": "%s",
 		"body": {
 			"RegisterScamReport": {
 				"report_id": "%s"
@@ -164,19 +164,22 @@ func getKeyPair(privateKeyFile string) (*crypto.KeyPair, error) {
 }
 
 func (client *Client) callWaveletLedger(tag string, payload string) (interface{}, error) {
-	cmd := fmt.Sprintf("%s send_transaction --api.host %s --api.port %d --api.private_key_file %s %s %s",
-		client.config.WCTLPath,
+	outBytes, err := exec.Command(client.config.WCTLPath,
+		"send_transaction",
+		"--api.host",
 		client.config.WaveletHost,
-		client.config.WaveletPort,
+		"--api.port",
+		fmt.Sprintf("%d", client.config.WaveletPort),
+		"--api.private_key_file",
 		client.config.PrivateKeyFile,
 		tag,
-		payload,
-	)
-	_, err := exec.Command(cmd).Output()
+		payload).Output()
 	if err != nil {
 		return nil, err
 	}
-	return "TODO", nil
+	var result interface{}
+	json.Unmarshal(outBytes, &result)
+	return result, nil
 }
 
 func (client *Client) callTaintServer(path string, body interface{}, out interface{}) error {

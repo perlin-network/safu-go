@@ -156,10 +156,9 @@ func main() {
 			},
 		},
 		{
-			Name:      "upgrade",
-			Usage:     "Normal member upgrade to VIP member by paying 500 PERL and must have 20 rep",
-			Flags:     ledgerFlags,
-			ArgsUsage: "<target_address> <scam_report_id>",
+			Name:  "upgrade",
+			Usage: "Normal member upgrade to VIP member by paying 500 PERL and must have 20 rep",
+			Flags: ledgerFlags,
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
 				if err != nil {
