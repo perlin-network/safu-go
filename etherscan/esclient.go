@@ -2,6 +2,7 @@ package etherscan
 
 import (
 	"github.com/nanmu42/etherscan-api"
+	"github.com/perlin-network/safu-go/model"
 	"log"
 	"strings"
 )
@@ -18,10 +19,12 @@ func NewESClient(APIKey string) *ESClient {
 }
 
 // WIP
-func (e *ESClient) Crawl(address string) error {
+func (e *ESClient) Crawl(address string) ([]*model.Vertex, error) {
+	var list []*model.Vertex
+
 	txs, err := e.getTxByAddress(address, 1, 10)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var maxDepth = 3
@@ -51,7 +54,7 @@ func (e *ESClient) Crawl(address string) error {
 			currentDepth++
 			if currentDepth > maxDepth {
 				log.Printf("reached max depth %d", maxDepth)
-				return nil
+				return list, nil
 			}
 
 			elementsToDepthIncrease = nextElementsToDepthIncrease
@@ -79,7 +82,7 @@ func (e *ESClient) Crawl(address string) error {
 
 	}
 
-	return nil
+	return list, nil
 }
 
 // WIP
