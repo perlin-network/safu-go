@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+/*
+Example Usage:
+$ go run main.go register --wavelet.port 9000 --wctl.path ../src/github.com/perlin-network/wavelet/cmd/wctl/main --private_key_file ../src/github.com/perlin-network/wavelet/cmd/wavelet/wallet.txt --contract.address 432d39643137616133653431643664616239656337326133663935346435643630653335343064313863643166623862656536343931343836366635333965646366
+{"transaction_id":"3db6e4d3a86982b9fc42d75e4ad37de147bba0985b7c154d2319f3029587b923"}
+
+*/
+
 func main() {
 	app := cli.NewApp()
 
