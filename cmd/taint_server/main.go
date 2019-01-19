@@ -92,20 +92,6 @@ func runServer(c *Config) error {
 	jsonConfig, _ := json.MarshalIndent(c, "", "  ")
 	log.Debug().Msgf("Config: %s", string(jsonConfig))
 
-	/*
-		var privateKeyHex string
-		if len(c.PrivateKeyFile) > 0 && c.PrivateKeyFile != "random" {
-			bytes, err := ioutil.ReadFile(c.PrivateKeyFile)
-			if err != nil {
-				return errors.Wrapf(err, "Unable to open server private key file: %s", c.PrivateKeyFile)
-			}
-			privateKeyHex = strings.TrimSpace(string(bytes))
-		} else {
-			log.Info().Msg("Generating a random wallet")
-			privateKeyHex = ""
-		}
-	*/
-
 	api.Run(fmt.Sprintf("%s:%d", c.Host, c.Port))
 
 	return nil
