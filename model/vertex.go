@@ -1,9 +1,14 @@
 package model
 
+import (
+	"bytes"
+)
+
 type Vertex struct {
-	Address  string
-	Children map[string]struct{}
-	Parents  map[string]struct{}
+	Address  string              `json:"address"`
+	Taint    int                 `json:"taint"`
+	Children map[string]struct{} `json:"children"`
+	Parents  map[string]struct{} `json:"parents"`
 }
 
 func NewVertex(address string) *Vertex {
@@ -14,4 +19,15 @@ func NewVertex(address string) *Vertex {
 	}
 
 	return v
+}
+
+func (v *Vertex) String() string {
+	var buffer bytes.Buffer
+
+	buffer.WriteString("address: " + v.Address)
+
+	for k := range v.Children {
+		buffer.WriteString("		children: " + k)
+	}
+	return buffer.String()
 }

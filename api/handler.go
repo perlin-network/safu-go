@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/perlin-network/safu-go/database"
 	"github.com/pkg/errors"
 	"net/http"
 )
@@ -18,12 +19,20 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 		return http.StatusBadRequest, nil, errors.Wrap(err, "invalid request")
 	}
 
-	id, err := s.store.AddReport(req.ScammerAddress, req.VictimAddress, req.Title, req.Content, req.Proof)
+	report := database.Report{
+		ScammerAddress: req.ScammerAddress,
+		VictimAddress: req.VictimAddress,
+		Title: req.Title,
+		Content: req.Content,
+		Proof: req.Proof,
+	}
+
+	id, err := s.store.AddReport(report)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	reportID := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", id)))
+	reportID := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s", id)))
 	var res = SubmitReportResponse{
 		ID: reportID,
 	}
