@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/perlin-network/safu-go/database"
 	"github.com/perlin-network/safu-go/etherscan"
+	"github.com/perlin-network/safu-go/ledger"
 	"gopkg.in/go-playground/validator.v9"
 	"net/http"
 
@@ -23,6 +24,7 @@ var (
 type service struct {
 	esClient *etherscan.ESClient
 	store    *database.TieDotStore
+	ledger   *ledger.Ledger
 }
 
 // init registers routes to the HTTP serve mux.
@@ -32,12 +34,13 @@ func (s *service) init(mux *http.ServeMux) {
 }
 
 // Run runs the API server with a specified set of options.
-func Run(serverAddr string, esClient *etherscan.ESClient, store *database.TieDotStore) {
+func Run(serverAddr string, esClient *etherscan.ESClient, store *database.TieDotStore, ledger *ledger.Ledger) {
 	mux := http.NewServeMux()
 
 	service := &service{
 		esClient: esClient,
 		store:    store,
+		ledger:   ledger,
 	}
 
 	service.init(mux)
