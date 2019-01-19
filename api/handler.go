@@ -64,12 +64,18 @@ func (s *service) queryAddress(ctx *requestContext) (int, interface{}, error) {
 		return http.StatusBadRequest, nil, err
 	}
 
-	accountRepScores := s.getAccountRepScores(req.TargetAddress)
+	accountRepScores, err := s.getAccountRepScores(req.TargetAddress)
+	if err != nil {
+		return http.StatusBadRequest, nil, err
+	}
 	if accountRepScores > 30 {
 		accountRepScores = 30
 	}
 
-	scamReportScores := s.getScamReportScores(req.TargetAddress)
+	scamReportScores, err := s.getScamReportScores(req.TargetAddress)
+	if err != nil {
+		return http.StatusBadRequest, nil, err
+	}
 	if scamReportScores > 70 {
 		accountRepScores = 70
 	}
@@ -83,12 +89,30 @@ func (s *service) queryAddress(ctx *requestContext) (int, interface{}, error) {
 	return http.StatusOK, res, nil
 }
 
-func (s *service) getAccountRepScores(targetAddress string) int {
-	// TODO:
-	return 0
+func (s *service) getAccountRepScores(targetAddress string) (int, error) {
+	reports, err := s.store.GetReportsByScamAddress(targetAddress)
+	if err != nil {
+		return 0, err
+	}
+	var accountIDs []string
+	for _, report := range reports {
+		accountIDs = append(accountIDs, report.AccountID)
+	}
+	rep, err := s.ledger.GetReps(accountIDs)
+	if err != nil {
+		return 0, err
+	}
+	return rep * 10, nil
 }
 
-func (s *service) getScamReportScores(targetAddress string) int {
-	s.store.BFS(targetAddress)
-	return 0
+func (s *service) getScamReportScores(targetAddress string) (int, error) {
+	report, err := s.store.GetReportByScamAddress(targetAddress)
+	if err != nil {
+		return 0, err
+	}
+	taint := int(report.Taint * 7 / 10)
+	if taint > 70 {
+		taint = 70
+	}
+	return taint, nil
 }

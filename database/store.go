@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gofrs/uuid"
 	"github.com/perlin-network/safu-go/model"
+	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	"log"
 	"strings"
@@ -41,7 +42,7 @@ func (t *TieDotStore) AddReport(report Report) (string, error) {
 	return id.String(), nil
 }
 
-func (t *TieDotStore) GetReport(scammerAddress string) ([]*Report, error) {
+func (t *TieDotStore) GetReportsByScamAddress(scammerAddress string) ([]*Report, error) {
 	var reports []*Report
 	iter := t.db.NewIterator(nil, nil)
 	iter.Release()
@@ -77,6 +78,11 @@ func (t *TieDotStore) InsertGraph(graph ...*model.Vertex) error {
 	}
 
 	return nil
+}
+
+func (t *TieDotStore) GetReportByScamAddress(address string) (*Report, error) {
+	// TODO:
+	return nil, errors.New("Not implemented")
 }
 
 func (t *TieDotStore) BFS(address string) error {

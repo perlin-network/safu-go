@@ -9,4 +9,5 @@ type Report struct {
 	Proof          string `json:"proof"`
 	Timestamp      int64  `json:"timestamp"`
 	AccountID      string `json:"account_id"`
+	Taint          int    `json:"taint"`
 }
