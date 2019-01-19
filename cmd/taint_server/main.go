@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/HouzuoGuo/tiedot/db"
 	"github.com/perlin-network/safu-go/api"
+	"github.com/perlin-network/safu-go/database"
 	"github.com/perlin-network/safu-go/etherscan"
 	"github.com/perlin-network/safu-go/log"
 	"github.com/pkg/errors"
@@ -50,7 +51,7 @@ func main() {
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "db.path",
 			Value: "testdb",
-			Usage: "Load/initialize LevelDB store from `DB_PATH`.",
+			Usage: "Load/initialize LevelDB database from `DB_PATH`.",
 		}),
 		altsrc.NewBoolFlag(cli.BoolFlag{
 			Name:  "db.reset",
@@ -129,10 +130,11 @@ func runServer(c *Config) error {
 
 	// TODO: setup main loop to watch the ledger
 
+	var store = database.NewTieDotStore(c.DatabasePath)
 	var esClient = etherscan.NewESClient("4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1")
 
 	// listen for api calls
-	api.Run(node, fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort), esClient, tiedotDB)
+	api.Run(fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort), esClient, store)
 
 	return nil
 }
