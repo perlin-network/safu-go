@@ -1,8 +1,8 @@
 module github.com/perlin-network/safu-go
 
 require (
-	github.com/nanmu42/etherscan-api v1.0.4
 	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/nanmu42/etherscan-api v1.0.4
 	github.com/pkg/errors v0.8.1
 	github.com/rs/cors v1.6.0
 	github.com/rs/zerolog v1.11.0
