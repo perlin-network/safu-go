@@ -1,6 +1,8 @@
 package api
 
 type SubmitReportRequest struct {
+	Timestamp      int64  `json:"timestamp" validate:"required"`
+	AccountID      string `json:"account_id" validate:"required"`
 	ScammerAddress string `json:"scammer_address" validate:"required"`
 	VictimAddress  string `json:"victim_address" validate:"required"`
 	Title          string `json:"title" validate:"required"`
@@ -9,5 +11,16 @@ type SubmitReportRequest struct {
 }
 
 type SubmitReportResponse struct {
-	ID int `json:"id"`
+	ID string `json:"id"`
+}
+
+type QueryAddressRequest struct {
+	Timestamp     int64  `json:"timestamp" validate:"required"`
+	AccountID     string `json:"account_id" validate:"required"`
+	TargetAddress string `json:"target_address" validate:"required"`
+}
+
+type QueryAddressResponse struct {
+	TargetAddress string `json:"target_address" validate:"required"`
+	TaintScore    int32  `json:"timestamp" validate:"required"`
 }

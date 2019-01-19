@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/base64"
+	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
 )
@@ -21,8 +23,9 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 		return http.StatusInternalServerError, nil, err
 	}
 
+	reportID := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", id)))
 	var res = SubmitReportResponse{
-		ID: id,
+		ID: reportID,
 	}
 
 	return http.StatusOK, res, nil

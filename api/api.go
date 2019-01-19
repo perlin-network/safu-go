@@ -10,6 +10,11 @@ import (
 	"github.com/rs/cors"
 )
 
+const (
+	RoutePostScamRepot = "/post_scam_report"
+	RouteQueryAddress  = "/query_address"
+)
+
 var (
 	validate = validator.New()
 )
@@ -22,9 +27,8 @@ type service struct {
 
 // init registers routes to the HTTP serve mux.
 func (s *service) init(mux *http.ServeMux) {
-	mux.Handle("/debug/vars", http.DefaultServeMux)
-	mux.HandleFunc("/post_scam_report", s.wrap(s.postScamReport))
-	mux.HandleFunc("/query_address", s.wrap(s.queryAddress))
+	mux.HandleFunc(RoutePostScamRepot, s.wrap(s.postScamReport))
+	mux.HandleFunc(RouteQueryAddress, s.wrap(s.queryAddress))
 }
 
 // Run runs the API server with a specified set of options.

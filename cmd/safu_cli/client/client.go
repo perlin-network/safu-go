@@ -1,13 +1,19 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/perlin-network/noise/crypto"
 	"github.com/perlin-network/noise/crypto/ed25519"
+	"github.com/perlin-network/safu-go/api"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 var (
@@ -98,18 +104,34 @@ func (client *Client) Deposit(depositAmount int64) (interface{}, error) {
 	}`, client.config.SmartContractAddress, depositAmount))
 }
 
-func (client *Client) Query(address string) (interface{}, error) {
-	return nil, errors.New("Not implemented")
+func (client *Client) Query(targetAddress string) (interface{}, error) {
+	body := api.QueryAddressRequest{
+		AccountID:     client.config.AccountID,
+		Timestamp:     time.Now().UnixNano(),
+		TargetAddress: targetAddress,
+	}
+	var taintResp api.QueryAddressResponse
+	if err := client.callTaintServer(api.RouteQueryAddress, body, &taintResp); err != nil {
+		return nil, err
+	}
+	return taintResp, nil
 }
 
 func (client *Client) RegisterScamReport(scammerAddress string, victimAddress string, title string, content string) (interface{}, error) {
 	var err error
 	// 1. push the scam report to taint server
-	_, err = client.callTaintServer()
-	if err != nil {
+	body := api.SubmitReportRequest{
+		AccountID:      client.config.AccountID,
+		Timestamp:      time.Now().UnixNano(),
+		ScammerAddress: scammerAddress,
+		VictimAddress:  victimAddress,
+		Title:          title,
+		Content:        content,
+	}
+	var taintResp api.SubmitReportResponse
+	if err = client.callTaintServer(api.RoutePostScamRepot, body, &taintResp); err != nil {
 		return nil, err
 	}
-	scamReportID := "TODO: get this from the taint server"
 	// 2. push the report id to the ledger
 	_, err = client.callWaveletLedger("custom", fmt.Sprintf(`{
 		"receipient": "%s",
@@ -118,14 +140,14 @@ func (client *Client) RegisterScamReport(scammerAddress string, victimAddress st
 				"report_id": "%s"
 			}
 		}
-	}`, client.config.SmartContractAddress, scamReportID))
+	}`, client.config.SmartContractAddress, taintResp.ID))
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]string{
 		"status":    "ok",
-		"report_id": scamReportID,
+		"report_id": taintResp.ID,
 		"tx_id":     "TODO",
 	}, nil
 }
@@ -157,7 +179,43 @@ func (client *Client) callWaveletLedger(tag string, payload string) (interface{}
 	return "TODO", nil
 }
 
-func (client *Client) callTaintServer() (interface{}, error) {
-	// TODO: take an http request
-	return nil, nil
+func (client *Client) callTaintServer(path string, body interface{}, out interface{}) error {
+	prot := "http"
+	u, err := url.Parse(fmt.Sprintf("%s://%s:%d%s", prot, client.config.WaveletHost, client.config.WaveletPort, path))
+	if err != nil {
+		return err
+	}
+	req := &http.Request{
+		Method: "POST",
+		URL:    u,
+	}
+
+	if body != nil {
+		rawBody, err := json.Marshal(body)
+		if err != nil {
+			return err
+		}
+		req.Body = ioutil.NopCloser(bytes.NewReader(rawBody))
+	}
+
+	c := &http.Client{}
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return errors.Errorf("got an error code %v: %v", resp.Status, string(data))
+	}
+
+	if out == nil {
+		return nil
+	}
+	return json.Unmarshal(data, out)
 }
