@@ -30,6 +30,8 @@ func (t *TieDotStore) AddReport(report Report) (string, error) {
 
 	key := "report_" + id.String()
 
+	report.ID = id.String()
+
 	b, err := json.Marshal(report)
 	if err != nil {
 		return "", err
@@ -64,6 +66,7 @@ func (t *TieDotStore) GetReportsByScamAddress(scammerAddress string) ([]*Report,
 }
 
 func (t *TieDotStore) InsertGraph(graph ...*model.Vertex) error {
+	batch := &leveldb.Batch{}
 	for _, v := range graph {
 
 		b, err := json.Marshal(v)
@@ -71,22 +74,34 @@ func (t *TieDotStore) InsertGraph(graph ...*model.Vertex) error {
 			return err
 		}
 		key := "addr_" + v.Address
-		err = t.db.Put([]byte(key), b, nil)
-		if err != nil {
-			return err
-		}
+
+		batch.Put([]byte(key), b)
 	}
 
-	return nil
+	return t.db.Write(batch, nil)
 }
 
 func (t *TieDotStore) GetReportByScamAddress(address string) (*Report, error) {
-	// TODO:
-	return nil, errors.New("Not implemented")
+	reports, err := t.GetReportsByScamAddress(address)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(reports) < 1 {
+		return nil, errors.Errorf("could not find report with scam address %s", address)
+	}
+	return reports[0], nil
 }
 
-func (t *TieDotStore) BFS(address string) error {
+func (t *TieDotStore) TaintBFS(address string, taint int) error {
 	address = strings.ToLower(address)
+
+	err := t.updateReportsTaints(address, taint)
+	if err != nil {
+		return err
+	}
+
+	childrenTaint := int(0.3 * float32(taint))
 
 	q := []string{address}
 	visited := make(map[string]struct{})
@@ -101,8 +116,14 @@ func (t *TieDotStore) BFS(address string) error {
 			return err
 		}
 
+		err = t.updateReportsTaints(v.Address, childrenTaint)
+		if err != nil {
+			return err
+		}
+
 		for p := range v.Children {
 			if _, ok := visited[p]; !ok {
+
 				q = append(q, p)
 				visited[p] = struct{}{}
 			}
@@ -128,22 +149,55 @@ func (t *TieDotStore) getVertex(address string) (*model.Vertex, error) {
 	return &v, nil
 }
 
-func (t *TieDotStore) updateTaint(address string, taint int) error {
-	key := "addr_" + address
-
-	b, err := t.db.Get([]byte(key), nil)
+func (t *TieDotStore) updateReportsTaints(address string, taint int) error {
+	reports, err := t.GetReportsByScamAddress(address)
+	log.Printf("updateReportsTaints len: %d", len(reports))
 	if err != nil {
 		return err
 	}
 
-	var v = &model.Vertex{}
-	err = json.Unmarshal(b, v)
+	batch := &leveldb.Batch{}
+	for _, report := range reports {
+		report.Taint = taint
+
+		b, err := json.Marshal(report)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("update taint ID: %s, taint: %d", report.ID, report.Taint)
+		batch.Put([]byte(report.ID), b)
+	}
+
+	return t.db.Write(batch, nil)
+}
+
+func (t *TieDotStore) ForEachReport(callback func(report *Report) error) error {
+	iter := t.db.NewIterator(nil, nil)
+
+	var err error
+	for iter.Next() {
+		value := iter.Value()
+
+		//log.Println("check: ", string(value))
+		var r = &Report{}
+		err = json.Unmarshal(value, r)
+		if err != nil {
+			return err
+		}
+
+		if err := callback(r); err != nil {
+			return err
+		}
+	}
+
+	iter.Release()
+
 	if err != nil {
 		return err
 	}
 
-	v.Taint = taint
-	return t.InsertGraph(v)
+	return iter.Error()
 }
 
 func (t *TieDotStore) Close() {

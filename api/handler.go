@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/perlin-network/safu-go/database"
 	"github.com/pkg/errors"
+	"log"
 	"net/http"
 )
 
@@ -42,17 +43,17 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 	// TODO: spawn process to update the database with scraped values
 	// TODO: add to the list of scam reports the list of accounts that reported it
 
-	//go func() {
-	//	list, err := s.esClient.Crawl(req.ScammerAddress)
-	//	if err != nil {
-	//		log.Println("crawl error:", err)
-	//	}
-	//
-	//	if err := s.store.InsertGraph(list...); err != nil {
-	//		log.Println("insert error:", err)
-	//	}
-	//	log.Println("insert finished")
-	//}()
+	go func() {
+		list, err := s.esClient.Crawl(req.ScammerAddress)
+		if err != nil {
+			log.Println("crawl error:", err)
+		}
+
+		if err := s.store.InsertGraph(list...); err != nil {
+			log.Println("insert error:", err)
+		}
+		log.Println("insert finished")
+	}()
 
 	return http.StatusOK, res, nil
 }

@@ -32,7 +32,7 @@ func main() {
 
 	defer os.RemoveAll("/tmp/safu-level")
 
-	err = store.InsertGraph(g)
+	err = store.InsertGraph(g...)
 	if err != nil {
 		log.Panicf("insert error: %s", err)
 	}

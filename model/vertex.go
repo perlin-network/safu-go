@@ -6,7 +6,6 @@ import (
 
 type Vertex struct {
 	Address  string              `json:"address"`
-	Taint    int                 `json:"taint"`
 	Children map[string]struct{} `json:"children"`
 	Parents  map[string]struct{} `json:"parents"`
 }
