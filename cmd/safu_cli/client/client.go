@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+const (
+	smartContractAddr = "TODO"
+)
+
 var (
 	signaturePolicy = ed25519.New()
 )
@@ -38,7 +42,12 @@ func NewClient(config *Config) (*Client, error) {
 }
 
 func (client *Client) Register() (interface{}, error) {
-	return nil, errors.New("Not implemented")
+	return client.callWaveletLedger("custom", fmt.Sprintf(`{
+		"receipient": "%s",
+		"body": {
+			"Payload": "Register"
+		}
+	}`, smartContractAddr))
 }
 
 func (client *Client) ResetRep(targetAddress string) (interface{}, error) {
@@ -57,6 +66,10 @@ func (client *Client) Upgrade() (interface{}, error) {
 	return nil, errors.New("Not implemented")
 }
 
+func (client *Client) Deposit(depositAmount int64) (interface{}, error) {
+	return nil, errors.New("Not implemented")
+}
+
 func (client *Client) Query(address string) (interface{}, error) {
 	return nil, errors.New("Not implemented")
 }
@@ -69,7 +82,7 @@ func (client *Client) RegisterScamReport(scammerAddress string, victimAddress st
 		return nil, err
 	}
 	// 2. push the report id to the ledger
-	_, err = client.callWaveletLedger()
+	_, err = client.callWaveletLedger("TODO", "TODO")
 	if err != nil {
 		return nil, err
 	}
@@ -92,9 +105,15 @@ func getKeyPair(privateKeyFile string) (*crypto.KeyPair, error) {
 	return crypto.FromPrivateKey(signaturePolicy, privateKeyHex)
 }
 
-func (client *Client) callWaveletLedger() (interface{}, error) {
-
-	cmd := fmt.Sprintf("%s ", client.config.WCTLPath)
+func (client *Client) callWaveletLedger(tag string, payload string) (interface{}, error) {
+	cmd := fmt.Sprintf("%s send_transaction --api.host %s --api.port %s --api.private_key_file %s %s",
+		client.config.WCTLPath,
+		client.config.WaveletHost,
+		client.config.WaveletPort,
+		client.config.PrivateKeyFile,
+		tag,
+		payload,
+	)
 	_, err := exec.Command(cmd).Output()
 	if err != nil {
 		return nil, err

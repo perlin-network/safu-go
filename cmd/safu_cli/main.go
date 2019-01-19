@@ -9,6 +9,7 @@ import (
 	"gopkg.in/urfave/cli.v1/altsrc"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -35,7 +36,7 @@ func main() {
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "account_id",
 			Value: "account_id",
-			Usage: "Account ID of the user on the taint server.",
+			Usage: "The public key of the wallet that originally registered.",
 		}),
 	}
 
@@ -72,7 +73,7 @@ func main() {
 		{
 			Name:  "register",
 			Usage: "People who aren't registered to SAFU yet must call this first",
-			Flags: taintFlags,
+			Flags: ledgerFlags,
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
 				if err != nil {
@@ -160,6 +161,29 @@ func main() {
 					return err
 				}
 				res, err := client.Upgrade()
+				if err != nil {
+					return err
+				}
+				jsonOut, _ := json.Marshal(res)
+				fmt.Printf("%s\n", jsonOut)
+				return nil
+			},
+		},
+		{
+			Name:      "deposit",
+			Usage:     "Add to the balance of an account",
+			Flags:     ledgerFlags,
+			ArgsUsage: "<deposit_amount>",
+			Action: func(c *cli.Context) error {
+				client, err := setup(c)
+				if err != nil {
+					return err
+				}
+				depositAmount, err := strconv.ParseInt(c.Args().Get(0), 10, 64)
+				if err != nil {
+					return err
+				}
+				res, err := client.Deposit(depositAmount)
 				if err != nil {
 					return err
 				}
