@@ -14,6 +14,7 @@ import (
 const (
 	RoutePostScamRepot = "/post_scam_report"
 	RouteQueryAddress  = "/query_address"
+	RouteGraph = "/graph"
 )
 
 var (
@@ -31,6 +32,7 @@ type service struct {
 func (s *service) init(mux *http.ServeMux) {
 	mux.HandleFunc(RoutePostScamRepot, s.wrap(s.postScamReport))
 	mux.HandleFunc(RouteQueryAddress, s.wrap(s.queryAddress))
+	mux.HandleFunc(RouteGraph, s.wrap(s.getGraph))
 }
 
 // Run runs the API server with a specified set of options.

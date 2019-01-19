@@ -44,6 +44,7 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 	// TODO: add to the list of scam reports the list of accounts that reported it
 
 	go func() {
+		log.Println("starts crawling")
 		list, err := s.esClient.Crawl(req.ScammerAddress)
 		if err != nil {
 			log.Println("crawl error:", err)
@@ -52,7 +53,8 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 		if err := s.store.InsertGraph(list...); err != nil {
 			log.Println("insert error:", err)
 		}
-		log.Println("insert finished")
+
+		log.Println("finish crawling")
 	}()
 
 	return http.StatusOK, res, nil
@@ -116,4 +118,34 @@ func (s *service) getScamReportScores(targetAddress string) (int, error) {
 		taint = 70
 	}
 	return taint, nil
+}
+
+func (s *service) getGraph(ctx *requestContext) (int, interface{}, error) {
+	graph, err := s.store.GetAllVertices()
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+
+	type vertex struct {
+		Address  string   `json:"address"`
+		//Parents  []string `json:"parents"`
+		Children []string `json:"children"`
+	}
+
+	var list []*vertex
+
+	for _, g := range graph {
+		v := vertex{
+			Address: g.Address,
+		}
+
+		for c := range g.Children {
+			v.Children = append(v.Children, c)
+		}
+
+		list = append(list, &v)
+	}
+
+	return http.StatusOK, list, nil
 }

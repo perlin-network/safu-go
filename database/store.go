@@ -6,6 +6,7 @@ import (
 	"github.com/perlin-network/safu-go/model"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	"log"
 	"strings"
 )
@@ -149,6 +150,36 @@ func (t *TieDotStore) getVertex(address string) (*model.Vertex, error) {
 	return &v, nil
 }
 
+func (t *TieDotStore) GetAllVertices() ([]*model.Vertex, error) {
+	var list []*model.Vertex
+	prefix := "addr_"
+	//prefixLength := len(prefix)
+
+	iter := t.db.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
+
+	var err error
+	for iter.Next() {
+		value := iter.Value()
+
+		//log.Println("check: ", string(value))
+		var vertex = &model.Vertex{}
+		err = json.Unmarshal(value, vertex)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, vertex)
+	}
+
+	iter.Release()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, iter.Error()
+}
+
 func (t *TieDotStore) updateReportsTaints(address string, taint int) error {
 	reports, err := t.GetReportsByScamAddress(address)
 	log.Printf("updateReportsTaints len: %d", len(reports))
@@ -173,7 +204,10 @@ func (t *TieDotStore) updateReportsTaints(address string, taint int) error {
 }
 
 func (t *TieDotStore) ForEachReport(callback func(report *Report) error) error {
-	iter := t.db.NewIterator(nil, nil)
+	prefix := "report_"
+	//prefixLength := len(prefix)
+
+	iter := t.db.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
 
 	var err error
 	for iter.Next() {
