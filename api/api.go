@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/perlin-network/safu-go/etherscan"
 	"net/http"
 
 	"github.com/perlin-network/safu-go/log"
@@ -9,6 +10,7 @@ import (
 
 // service represents a service.
 type service struct {
+	esClient *etherscan.ESClient
 }
 
 // init registers routes to the HTTP serve mux.
@@ -19,10 +21,12 @@ func (s *service) init(mux *http.ServeMux) {
 }
 
 // Run runs the API server with a specified set of options.
-func Run(serverAddr string) {
+func Run(serverAddr string, esClient *etherscan.ESClient) {
 	mux := http.NewServeMux()
 
-	service := &service{}
+	service := &service{
+		esClient: esClient,
+	}
 
 	service.init(mux)
 

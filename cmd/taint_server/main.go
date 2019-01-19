@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/perlin-network/safu-go/api"
+	"github.com/perlin-network/safu-go/etherscan"
 	"github.com/perlin-network/safu-go/log"
 	"gopkg.in/urfave/cli.v1"
 	"gopkg.in/urfave/cli.v1/altsrc"
@@ -117,8 +118,10 @@ func runServer(c *Config) error {
 	// TODO: setup database
 	// TODO: setup main loop to watch the ledger
 
+	var esClient = etherscan.NewESClient("4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1")
+
 	// listen for api calls
-	api.Run(fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort))
+	api.Run(fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort), esClient)
 
 	return nil
 }
