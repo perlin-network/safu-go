@@ -2,9 +2,11 @@ package client
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/perlin-network/noise/crypto"
+	"github.com/perlin-network/noise/crypto/blake2b"
 	"github.com/perlin-network/noise/crypto/ed25519"
 	"github.com/perlin-network/safu-go/api"
 	"github.com/pkg/errors"
@@ -18,6 +20,7 @@ import (
 
 var (
 	signaturePolicy = ed25519.New()
+	hashPolicy      = blake2b.New()
 )
 
 // Config represents a Perlin Ledger client config.
@@ -128,12 +131,31 @@ func (client *Client) RegisterScamReport(scammerAddress string, victimAddress st
 		Title:          title,
 		Content:        content,
 	}
+
+	keyPair, err := getKeyPair(client.config.PrivateKeyFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to get private key")
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to marshal body")
+	}
+
+	sig, err := keyPair.Sign(signaturePolicy, hashPolicy, bodyBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to sign body")
+	}
+
+	body.Proof = base64.StdEncoding.EncodeToString(sig)
+
 	var taintResp api.SubmitReportResponse
 	if err = client.callTaintServer(api.RoutePostScamRepot, body, &taintResp); err != nil {
 		return nil, err
 	}
+
 	// 2. push the report id to the ledger
-	_, err = client.callWaveletLedger("custom", fmt.Sprintf(`{
+	ledgerResp, err := client.callWaveletLedger("custom", fmt.Sprintf(`{
 		"recipient": "%s",
 		"body": {
 			"RegisterScamReport": {
@@ -145,10 +167,19 @@ func (client *Client) RegisterScamReport(scammerAddress string, victimAddress st
 		return nil, err
 	}
 
+	ledgerUnmashalled, ok := ledgerResp.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unable to cast transaction")
+	}
+	txID, ok := ledgerUnmashalled["transaction_id"].(string)
+	if !ok {
+		return nil, errors.New("Unable to parse transaction id")
+	}
+
 	return map[string]string{
 		"status":    "ok",
 		"report_id": taintResp.ID,
-		"tx_id":     "TODO",
+		"tx_id":     txID,
 	}, nil
 }
 
@@ -184,7 +215,7 @@ func (client *Client) callWaveletLedger(tag string, payload string) (interface{}
 
 func (client *Client) callTaintServer(path string, body interface{}, out interface{}) error {
 	prot := "http"
-	u, err := url.Parse(fmt.Sprintf("%s://%s:%d%s", prot, client.config.WaveletHost, client.config.WaveletPort, path))
+	u, err := url.Parse(fmt.Sprintf("%s://%s:%d%s", prot, client.config.TaintHost, client.config.TaintPort, path))
 	if err != nil {
 		return err
 	}

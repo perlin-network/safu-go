@@ -3,11 +3,14 @@ package api
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/perlin-network/safu-go/log"
 	"github.com/pkg/errors"
 	"net/http"
 )
 
 func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) {
+	log.Info().Msg("postScamReport")
+
 	var req SubmitReportRequest
 
 	if err := ctx.readJSON(&req); err != nil {
@@ -32,6 +35,8 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 }
 
 func (s *service) queryAddress(ctx *requestContext) (int, interface{}, error) {
+	log.Info().Msg("queryAddress")
+
 	// TODO: return the taint result
 	return http.StatusBadRequest, nil, errors.New("not implemented")
 }
