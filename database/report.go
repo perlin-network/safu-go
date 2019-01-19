@@ -6,5 +6,7 @@ type Report struct {
 	VictimAddress  string `json:"victim_address"`
 	Title          string `json:"title"`
 	Content        string `json:"content"`
-	Proof          string `json:"prrof"`
+	Proof          string `json:"proof"`
+	Timestamp      int64  `json:"timestamp"`
+	AccountID      string `json:"account_id"`
 }
