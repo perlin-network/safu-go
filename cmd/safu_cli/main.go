@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"github.com/perlin-network/safu-go/cmd/safu_cli/client"
 	"github.com/perlin-network/safu-go/log"
-	"github.com/pkg/errors"
 	"gopkg.in/urfave/cli.v1"
 	"gopkg.in/urfave/cli.v1/altsrc"
-	"io/ioutil"
 	"os"
 	"sort"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -24,7 +20,7 @@ func main() {
 	app.Version = "0.0.1"
 	app.Usage = "A cli that submits taint requests"
 
-	commonFlags := []cli.Flag{
+	taintFlags := []cli.Flag{
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "taint.host",
 			Value: "localhost",
@@ -37,9 +33,33 @@ func main() {
 			Usage: "Taint server port `PORT`.",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "account_id",
+			Value: "account_id",
+			Usage: "Account ID of the user on the taint server.",
+		}),
+	}
+
+	ledgerFlags := []cli.Flag{
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "wavelet.host",
+			Value: "localhost",
+			Usage: "Wavelet api server host `HOST`.",
+		}),
+		// note: use IntFlag for numbers, UintFlag don't seem to work with the toml files
+		altsrc.NewIntFlag(cli.IntFlag{
+			Name:  "wavelet.port",
+			Value: 3000,
+			Usage: "Wavelet api server port `PORT`.",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "wctl.path",
+			Value: "./wctl",
+			Usage: "Path to wctl binary",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "private_key_file",
 			Value: "wallet.txt",
-			Usage: "TXT file that contain's the node's private key `PRIVATE_KEY_FILE`. Leave `PRIVATE_KEY_FILE` = 'random' if you want to randomly generate a wallet.",
+			Usage: "TXT file that contain's the wallet's private key `PRIVATE_KEY_FILE`. Leave `PRIVATE_KEY_FILE` = 'random' if you want to randomly generate a wallet.",
 		}),
 	}
 
@@ -52,7 +72,7 @@ func main() {
 		{
 			Name:  "register",
 			Usage: "People who aren't registered to SAFU yet must call this first",
-			Flags: commonFlags,
+			Flags: taintFlags,
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
 				if err != nil {
@@ -70,7 +90,7 @@ func main() {
 		{
 			Name:      "reset_rep",
 			Usage:     "can only be called by admin; resets all +rep",
-			Flags:     commonFlags,
+			Flags:     ledgerFlags,
 			ArgsUsage: "<target_address>",
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
@@ -90,7 +110,7 @@ func main() {
 		{
 			Name:      "plus_rep",
 			Usage:     "Must be VIP member and can only do it once a day",
-			Flags:     commonFlags,
+			Flags:     ledgerFlags,
 			ArgsUsage: "<target_address> <scam_report_id>",
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
@@ -111,7 +131,7 @@ func main() {
 		{
 			Name:      "neg_rep",
 			Usage:     "Must be VIP member and can only do it once a day",
-			Flags:     commonFlags,
+			Flags:     ledgerFlags,
 			ArgsUsage: "<target_address> <scam_report_id>",
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
@@ -132,7 +152,7 @@ func main() {
 		{
 			Name:      "upgrade",
 			Usage:     "Normal member upgrade to VIP member by paying 500 PERL and must have 20 rep",
-			Flags:     commonFlags,
+			Flags:     ledgerFlags,
 			ArgsUsage: "<target_address> <scam_report_id>",
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
@@ -149,73 +169,9 @@ func main() {
 			},
 		},
 		{
-			Name:      "deposit",
-			Usage:     "add to a balanced stored for the wallet",
-			Flags:     commonFlags,
-			ArgsUsage: "<deposit_amount>",
-			Action: func(c *cli.Context) error {
-				client, err := setup(c)
-				if err != nil {
-					return err
-				}
-				depositAmount, err := strconv.Atoi(c.Args().Get(0))
-				if err != nil {
-					return err
-				}
-				res, err := client.Deposit(depositAmount)
-				if err != nil {
-					return err
-				}
-				jsonOut, _ := json.Marshal(res)
-				fmt.Printf("%s\n", jsonOut)
-				return nil
-			},
-		},
-		{
-			Name:      "withdraw",
-			Usage:     "withdraw a balance stored for the wallet",
-			Flags:     commonFlags,
-			ArgsUsage: "<withdraw_amount>",
-			Action: func(c *cli.Context) error {
-				client, err := setup(c)
-				if err != nil {
-					return err
-				}
-				withdrawAmount, err := strconv.Atoi(c.Args().Get(0))
-				if err != nil {
-					return err
-				}
-				res, err := client.Withdraw(withdrawAmount)
-				if err != nil {
-					return err
-				}
-				jsonOut, _ := json.Marshal(res)
-				fmt.Printf("%s\n", jsonOut)
-				return nil
-			},
-		},
-		{
-			Name:  "balance",
-			Usage: "check the balance of the account",
-			Flags: commonFlags,
-			Action: func(c *cli.Context) error {
-				client, err := setup(c)
-				if err != nil {
-					return err
-				}
-				res, err := client.Balance()
-				if err != nil {
-					return err
-				}
-				jsonOut, _ := json.Marshal(res)
-				fmt.Printf("%s\n", jsonOut)
-				return nil
-			},
-		},
-		{
 			Name:      "query",
 			Usage:     "query an address for the taint value",
-			Flags:     commonFlags,
+			Flags:     taintFlags,
 			ArgsUsage: "<address>",
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
@@ -235,15 +191,18 @@ func main() {
 		{
 			Name:      "register_scam_report",
 			Usage:     "make a scam report",
-			Flags:     commonFlags,
-			ArgsUsage: "<scam_report_id>",
+			Flags:     append(ledgerFlags, taintFlags...),
+			ArgsUsage: "<scammer_address> <victim_address> <title> <content>",
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
 				if err != nil {
 					return err
 				}
-				scamReportID := c.Args().Get(0)
-				res, err := client.RegisterScamReport(scamReportID)
+				scammerAddress := c.Args().Get(0)
+				victimAddress := c.Args().Get(1)
+				title := c.Args().Get(2)
+				content := c.Args().Get(3)
+				res, err := client.RegisterScamReport(scammerAddress, victimAddress, title, content)
 				if err != nil {
 					return err
 				}
@@ -264,23 +223,14 @@ func main() {
 }
 
 func setup(c *cli.Context) (*client.Client, error) {
-	privateKeyFile := c.String("private_key_file")
-
-	var privateKeyHex string
-	if len(privateKeyFile) > 0 && privateKeyFile != "random" {
-		bytes, err := ioutil.ReadFile(privateKeyFile)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to open server private key file: %s", privateKeyFile)
-		}
-		privateKeyHex = strings.TrimSpace(string(bytes))
-	} else {
-		return nil, errors.Errorf("Invalid private key in file: %s", privateKeyFile)
-	}
-
-	client, err := client.NewClient(client.Config{
-		PrivateKeyHex: privateKeyHex,
-		Host:          c.String("taint.host"),
-		Port:          c.Uint("taint.port"),
+	client, err := client.NewClient(&client.Config{
+		PrivateKeyFile: c.String("private_key_file"),
+		TaintHost:      c.String("taint.host"),
+		TaintPort:      c.Uint("taint.port"),
+		WCTLPath:       c.String("wctl.path"),
+		WaveletHost:    c.String("wavelet.host"),
+		WaveletPort:    c.Uint("wavelet.port"),
+		AccountID:      c.String("account_id"),
 	})
 	if err != nil {
 		return nil, err
