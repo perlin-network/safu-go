@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/HouzuoGuo/tiedot/db"
 	"github.com/perlin-network/safu-go/api"
 	"github.com/perlin-network/safu-go/log"
+	"github.com/pkg/errors"
 	"gopkg.in/urfave/cli.v1"
 	"gopkg.in/urfave/cli.v1/altsrc"
 	"os"
@@ -114,7 +116,21 @@ func runServer(c *Config) error {
 	jsonConfig, _ := json.MarshalIndent(c, "", "  ")
 	log.Debug().Msgf("Config: %s", string(jsonConfig))
 
-	// TODO: setup database
+	// setup database
+	if c.ResetDatabase {
+		os.RemoveAll(c.DatabasePath)
+	}
+	// (Create if not exist) open a database
+	tiedotDB, err := db.OpenDB(c.DatabasePath)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to create the db")
+	}
+
+	// TODO: pass the db into a constructor that does something
+	if tiedotDB.Create("TestTable"); err != nil {
+		return err
+	}
+
 	// TODO: setup main loop to watch the ledger
 
 	// listen for api calls

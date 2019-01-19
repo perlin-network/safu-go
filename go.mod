@@ -2,6 +2,8 @@ module github.com/perlin-network/safu-go
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/HouzuoGuo/tiedot v0.0.0-20190118065647-a9d98e48e5ad
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/nanmu42/etherscan-api v1.0.4
 	github.com/perlin-network/noise v1.1.0
 	github.com/pkg/errors v0.8.1
