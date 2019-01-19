@@ -3,7 +3,6 @@ package etherscan
 import (
 	"github.com/nanmu42/etherscan-api"
 	"github.com/perlin-network/safu-go/model"
-	"log"
 	"strings"
 )
 
@@ -18,19 +17,32 @@ func NewESClient(APIKey string) *ESClient {
 	}
 }
 
-// WIP
 func (e *ESClient) Crawl(address string) ([]*model.Vertex, error) {
-	var list []*model.Vertex
-
-	txs, err := e.getTxByAddress(address, 1, 10)
+	m, err := e.crawl(address)
 	if err != nil {
 		return nil, err
 	}
 
-	var maxDepth = 3
-	var currentDepth = 0
-	var elementsToDepthIncrease = 1
-	var nextElementsToDepthIncrease = 0
+	var list []*model.Vertex
+	for _, v := range m {
+		list = append(list, v)
+	}
+
+	return list, nil
+}
+
+func (e *ESClient) crawl(address string) (map[string]*model.Vertex, error) {
+	address = strings.ToLower(address)
+
+	var graph = make(map[string]*model.Vertex)
+
+	txs, err := e.getTxByAddress(address, 1, 100)
+	if err != nil {
+		return nil, err
+	}
+
+	parent := model.NewVertex(address)
+	graph[address] = parent
 
 	visited := make(map[string]bool)
 	visited[address] = true
@@ -42,47 +54,41 @@ func (e *ESClient) Crawl(address string) ([]*model.Vertex, error) {
 		u := q[0]
 		q = q[1:len(q):len(q)]
 
-		toTxs, err := e.getTxByAddress(u.To, 1, 10)
-		log.Printf("q: %d, depth: %d, get: %s, result:= %d", len(q), currentDepth, u.To, len(toTxs))
+		toTxs, err := e.getTxByAddress(u.To, 1, 100)
+		//log.Printf("q: %d,get: %s, result:= %d", len(q), u.To, len(toTxs))
 
 		if err != nil {
 			continue
 		}
 
-		elementsToDepthIncrease--
-		if elementsToDepthIncrease == 0 {
-			currentDepth++
-			if currentDepth > maxDepth {
-				log.Printf("reached max depth %d", maxDepth)
-				return list, nil
-			}
-
-			elementsToDepthIncrease = nextElementsToDepthIncrease
-			nextElementsToDepthIncrease = 0
-		}
-
 		for _, toTx := range toTxs {
-			// Ignore if it's not from the address
-			if toTx.From != address {
-				log.Println("not from address")
+			// Convert the to and from address into lower case
+			toTx.To = strings.ToLower(toTx.To)
+			toTx.From = strings.ToLower(toTx.From)
+
+			if toTx.From != u.From {
 				continue
 			}
 
-			// Check if we've already visited
 			if _, ok := visited[toTx.To]; ok {
-				log.Println("already visited")
 				continue
 			}
 
-			nextElementsToDepthIncrease++
+			//log.Printf("u from: %s, to: %s", u.From, u.To)
+			//log.Printf("toTx from: %s, to: %s", toTx.From, toTx.To)
+
+			v := model.NewVertex(toTx.To)
+			v.Parents[parent.Address] = struct{}{}
+			graph[toTx.To] = v
+
+			parent.Children[toTx.To] = struct{}{}
+
 			visited[toTx.To] = true
 			q = append(q, toTx)
 		}
-
-
 	}
 
-	return list, nil
+	return graph, nil
 }
 
 // WIP
@@ -90,7 +96,7 @@ func (e *ESClient) getTxByAddress(address string, page int, offset int) ([]ether
 	startBlock := 0
 	endBlock := 99999999
 
-	log.Printf("getTxByAddress address: %s, page: %d, offset: %d", address, page, offset)
+	//log.Printf("getTxByAddress address: %s, page: %d, offset: %d", address, page, offset)
 	return e.client.NormalTxByAddress(address, &startBlock, &endBlock, page, offset, false)
 }
 
