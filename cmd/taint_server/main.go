@@ -127,17 +127,12 @@ func runServer(c *Config) error {
 		return errors.Wrapf(err, "Unable to create the db")
 	}
 
-	// TODO: pass the db into a constructor that does something
-	if tiedotDB.Create("TestTable"); err != nil {
-		return err
-	}
-
 	// TODO: setup main loop to watch the ledger
 
 	var esClient = etherscan.NewESClient("4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1")
 
 	// listen for api calls
-	api.Run(fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort), esClient)
+	api.Run(node, fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort), esClient, tiedotDB)
 
 	return nil
 }

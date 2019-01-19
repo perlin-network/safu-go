@@ -11,6 +11,7 @@ import (
 // service represents a service.
 type service struct {
 	esClient *etherscan.ESClient
+	tiedotDB *db.DB
 }
 
 // init registers routes to the HTTP serve mux.
@@ -21,11 +22,12 @@ func (s *service) init(mux *http.ServeMux) {
 }
 
 // Run runs the API server with a specified set of options.
-func Run(serverAddr string, esClient *etherscan.ESClient) {
+func Run(serverAddr string, esClient *etherscan.ESClient, tiedotDB *db.DB) {
 	mux := http.NewServeMux()
 
 	service := &service{
 		esClient: esClient,
+		tiedotDB: tiedotDB,
 	}
 
 	service.init(mux)
