@@ -38,35 +38,28 @@ func (t *TieDotStore) AddReport(report Report) (string, error) {
 		return "", err
 	}
 
-	index := "report_index_" + report.ScammerAddress
-	if err := t.db.Put([]byte(index), []byte(key), nil); err != nil {
-		return "", err
-	}
-
 	return id.String(), nil
 }
 
-func (t *TieDotStore) GetReport(scammerAddress string) (*Report, error) {
-	index := "report_index_" + scammerAddress
+func (t *TieDotStore) GetReport(scammerAddress string) ([]*Report, error) {
+	var reports []*Report
+	iter := t.db.NewIterator(nil, nil)
+	iter.Release()
 
-	key, err := t.db.Get([]byte(index), nil)
-	if err != nil {
-		return nil, err
+	for iter.Next() {
+		value := iter.Value()
+		var r = &Report{}
+		err := json.Unmarshal(value, r)
+		if err != nil {
+			return nil, err
+		}
+
+		if strings.EqualFold(scammerAddress, r.ScammerAddress) {
+			reports = append(reports, r)
+		}
 	}
 
-	b, err := t.db.Get(key, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var report Report
-
-	err = json.Unmarshal(b, &report)
-	if err != nil {
-		return nil, err
-	}
-
-	return &report, nil
+	return reports, nil
 }
 
 func (t *TieDotStore) InsertGraph(graph ...*model.Vertex) error {
