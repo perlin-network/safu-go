@@ -10,23 +10,20 @@ import (
 	"strings"
 )
 
-const (
-	smartContractAddr = "TODO"
-)
-
 var (
 	signaturePolicy = ed25519.New()
 )
 
 // Config represents a Perlin Ledger client config.
 type Config struct {
-	PrivateKeyFile string
-	TaintHost      string
-	TaintPort      uint
-	WCTLPath       string
-	WaveletHost    string
-	WaveletPort    uint
-	AccountID      string
+	PrivateKeyFile       string
+	TaintHost            string
+	TaintPort            uint
+	WCTLPath             string
+	WaveletHost          string
+	WaveletPort          uint
+	AccountID            string
+	SmartContractAddress string
 }
 
 // Client represents a Perlin Ledger client.
@@ -47,27 +44,58 @@ func (client *Client) Register() (interface{}, error) {
 		"body": {
 			"Payload": "Register"
 		}
-	}`, smartContractAddr))
+	}`, client.config.SmartContractAddress))
 }
 
 func (client *Client) ResetRep(targetAddress string) (interface{}, error) {
-	return nil, errors.New("Not implemented")
+	return client.callWaveletLedger("custom", fmt.Sprintf(`{
+		"receipient": "%s",
+		"body": {
+			"PlusRep": {
+				"target_address": "%s"
+			}
+		}
+	}`, client.config.SmartContractAddress, targetAddress))
 }
 
-func (client *Client) PlusRep(address string, scamReportID string) (interface{}, error) {
-	return nil, errors.New("Not implemented")
+func (client *Client) PlusRep(targetAddress string, scamReportID string) (interface{}, error) {
+	return client.callWaveletLedger("custom", fmt.Sprintf(`{
+		"receipient": "%s",
+		"body": {
+			"PlusRep": {
+				"target_address": "%s",
+				"report_id": "%s"
+			}
+		}
+	}`, client.config.SmartContractAddress, targetAddress, scamReportID))
 }
 
-func (client *Client) NegRep(address string, scamReportID string) (interface{}, error) {
-	return nil, errors.New("Not implemented")
+func (client *Client) NegRep(targetAddress string, scamReportID string) (interface{}, error) {
+	return client.callWaveletLedger("custom", fmt.Sprintf(`{
+		"receipient": "%s",
+		"body": {
+			"NegRep": {
+				"target_address": "%s",
+				"report_id": "%s"
+			}
+		}
+	}`, client.config.SmartContractAddress, targetAddress, scamReportID))
 }
 
 func (client *Client) Upgrade() (interface{}, error) {
-	return nil, errors.New("Not implemented")
+	return client.callWaveletLedger("custom", fmt.Sprintf(`{
+		"receipient": "%s",
+		"body": {
+			"Payload": "UpgradeToVIP"
+		}
+	}`, client.config.SmartContractAddress))
 }
 
 func (client *Client) Deposit(depositAmount int64) (interface{}, error) {
-	return nil, errors.New("Not implemented")
+	return client.callWaveletLedger("transfer", fmt.Sprintf(`{
+		"receipient": "%s",
+		"amount": %d
+	}`, client.config.SmartContractAddress, depositAmount))
 }
 
 func (client *Client) Query(address string) (interface{}, error) {
@@ -81,15 +109,23 @@ func (client *Client) RegisterScamReport(scammerAddress string, victimAddress st
 	if err != nil {
 		return nil, err
 	}
+	scamReportID := "TODO: get this from the taint server"
 	// 2. push the report id to the ledger
-	_, err = client.callWaveletLedger("TODO", "TODO")
+	_, err = client.callWaveletLedger("custom", fmt.Sprintf(`{
+		"receipient": "%s",
+		"body": {
+			"RegisterScamReport": {
+				"report_id": "%s"
+			}
+		}
+	}`, client.config.SmartContractAddress, scamReportID))
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]string{
 		"status":    "ok",
-		"report_id": "TODO",
+		"report_id": scamReportID,
 		"tx_id":     "TODO",
 	}, nil
 }
@@ -106,7 +142,7 @@ func getKeyPair(privateKeyFile string) (*crypto.KeyPair, error) {
 }
 
 func (client *Client) callWaveletLedger(tag string, payload string) (interface{}, error) {
-	cmd := fmt.Sprintf("%s send_transaction --api.host %s --api.port %s --api.private_key_file %s %s",
+	cmd := fmt.Sprintf("%s send_transaction --api.host %s --api.port %d --api.private_key_file %s %s %s",
 		client.config.WCTLPath,
 		client.config.WaveletHost,
 		client.config.WaveletPort,

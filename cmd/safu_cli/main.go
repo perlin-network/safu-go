@@ -60,7 +60,12 @@ func main() {
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "private_key_file",
 			Value: "wallet.txt",
-			Usage: "TXT file that contain's the wallet's private key `PRIVATE_KEY_FILE`. Leave `PRIVATE_KEY_FILE` = 'random' if you want to randomly generate a wallet.",
+			Usage: "TXT file that contain's the wallet's private key `PRIVATE_KEY_FILE`.",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "contract.address",
+			Value: "TODO",
+			Usage: "Address of the smart contract",
 		}),
 	}
 
@@ -248,13 +253,14 @@ func main() {
 
 func setup(c *cli.Context) (*client.Client, error) {
 	client, err := client.NewClient(&client.Config{
-		PrivateKeyFile: c.String("private_key_file"),
-		TaintHost:      c.String("taint.host"),
-		TaintPort:      c.Uint("taint.port"),
-		WCTLPath:       c.String("wctl.path"),
-		WaveletHost:    c.String("wavelet.host"),
-		WaveletPort:    c.Uint("wavelet.port"),
-		AccountID:      c.String("account_id"),
+		PrivateKeyFile:       c.String("private_key_file"),
+		TaintHost:            c.String("taint.host"),
+		TaintPort:            c.Uint("taint.port"),
+		WCTLPath:             c.String("wctl.path"),
+		WaveletHost:          c.String("wavelet.host"),
+		WaveletPort:          c.Uint("wavelet.port"),
+		AccountID:            c.String("account_id"),
+		SmartContractAddress: c.String("contract.address"),
 	})
 	if err != nil {
 		return nil, err
