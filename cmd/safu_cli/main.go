@@ -26,14 +26,14 @@ func main() {
 
 	commonFlags := []cli.Flag{
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "host",
+			Name:  "taint.host",
 			Value: "localhost",
 			Usage: "Taint server host `HOST`.",
 		}),
 		// note: use IntFlag for numbers, UintFlag don't seem to work with the toml files
 		altsrc.NewIntFlag(cli.IntFlag{
-			Name:  "port",
-			Value: 3000,
+			Name:  "taint.port",
+			Value: 5050,
 			Usage: "Taint server port `PORT`.",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
@@ -51,7 +51,7 @@ func main() {
 	app.Commands = []cli.Command{
 		{
 			Name:  "register",
-			Usage: "",
+			Usage: "People who aren't registered to SAFU yet must call this first",
 			Flags: commonFlags,
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
@@ -69,7 +69,7 @@ func main() {
 		},
 		{
 			Name:      "reset_rep",
-			Usage:     "",
+			Usage:     "can only be called by admin; resets all +rep",
 			Flags:     commonFlags,
 			ArgsUsage: "<target_address>",
 			Action: func(c *cli.Context) error {
@@ -89,7 +89,7 @@ func main() {
 		},
 		{
 			Name:      "plus_rep",
-			Usage:     "",
+			Usage:     "Must be VIP member and can only do it once a day",
 			Flags:     commonFlags,
 			ArgsUsage: "<target_address> <scam_report_id>",
 			Action: func(c *cli.Context) error {
@@ -110,7 +110,7 @@ func main() {
 		},
 		{
 			Name:      "neg_rep",
-			Usage:     "",
+			Usage:     "Must be VIP member and can only do it once a day",
 			Flags:     commonFlags,
 			ArgsUsage: "<target_address> <scam_report_id>",
 			Action: func(c *cli.Context) error {
@@ -131,7 +131,7 @@ func main() {
 		},
 		{
 			Name:      "upgrade",
-			Usage:     "",
+			Usage:     "Normal member upgrade to VIP member by paying 500 PERL and must have 20 rep",
 			Flags:     commonFlags,
 			ArgsUsage: "<target_address> <scam_report_id>",
 			Action: func(c *cli.Context) error {
@@ -150,7 +150,7 @@ func main() {
 		},
 		{
 			Name:      "deposit",
-			Usage:     "",
+			Usage:     "add to a balanced stored for the wallet",
 			Flags:     commonFlags,
 			ArgsUsage: "<deposit_amount>",
 			Action: func(c *cli.Context) error {
@@ -173,7 +173,7 @@ func main() {
 		},
 		{
 			Name:      "withdraw",
-			Usage:     "",
+			Usage:     "withdraw a balance stored for the wallet",
 			Flags:     commonFlags,
 			ArgsUsage: "<withdraw_amount>",
 			Action: func(c *cli.Context) error {
@@ -196,7 +196,7 @@ func main() {
 		},
 		{
 			Name:  "balance",
-			Usage: "",
+			Usage: "check the balance of the account",
 			Flags: commonFlags,
 			Action: func(c *cli.Context) error {
 				client, err := setup(c)
@@ -214,7 +214,7 @@ func main() {
 		},
 		{
 			Name:      "query",
-			Usage:     "",
+			Usage:     "query an address for the taint value",
 			Flags:     commonFlags,
 			ArgsUsage: "<address>",
 			Action: func(c *cli.Context) error {
@@ -234,7 +234,7 @@ func main() {
 		},
 		{
 			Name:      "register_scam_report",
-			Usage:     "",
+			Usage:     "make a scam report",
 			Flags:     commonFlags,
 			ArgsUsage: "<scam_report_id>",
 			Action: func(c *cli.Context) error {
@@ -279,8 +279,8 @@ func setup(c *cli.Context) (*client.Client, error) {
 
 	client, err := client.NewClient(client.Config{
 		PrivateKeyHex: privateKeyHex,
-		Host:          c.String("host"),
-		Port:          c.Uint("port"),
+		Host:          c.String("taint.host"),
+		Port:          c.Uint("taint.port"),
 	})
 	if err != nil {
 		return nil, err

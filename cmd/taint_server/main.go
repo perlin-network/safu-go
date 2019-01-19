@@ -15,10 +15,13 @@ import (
 // Config describes how to start the node
 type Config struct {
 	PrivateKeyFile string
-	Host           string
-	Port           uint
+	TaintHost      string
+	TaintPort      uint
 	DatabasePath   string
 	ResetDatabase  bool
+	WCTLPath       string
+	WaveletHost    string
+	WaveletPort    uint
 }
 
 func main() {
@@ -31,14 +34,14 @@ func main() {
 
 	app.Flags = []cli.Flag{
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "host",
+			Name:  "taint.host",
 			Value: "localhost",
 			Usage: "Listen for peers on host address `HOST`.",
 		}),
 		// note: use IntFlag for numbers, UintFlag don't seem to work with the toml files
 		altsrc.NewIntFlag(cli.IntFlag{
-			Name:  "port",
-			Value: 3000,
+			Name:  "taint.port",
+			Value: 5050,
 			Usage: "Listen for peers on port `PORT`.",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
@@ -55,6 +58,22 @@ func main() {
 			Value: "wallet.txt",
 			Usage: "TXT file that contain's the node's private key `PRIVATE_KEY_FILE`. Leave `PRIVATE_KEY_FILE` = 'random' if you want to randomly generate a wallet.",
 		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "wctl.path",
+			Value: "./wctl",
+			Usage: "Path to wctl binary",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:  "wavelet.host",
+			Value: "localhost",
+			Usage: "Wavelet chain api host address `HOST`.",
+		}),
+		// note: use IntFlag for numbers, UintFlag don't seem to work with the toml files
+		altsrc.NewIntFlag(cli.IntFlag{
+			Name:  "wavelet.port",
+			Value: 3000,
+			Usage: "Wavelet chain api port `PORT`.",
+		}),
 	}
 
 	cli.VersionPrinter = func(c *cli.Context) {
@@ -65,10 +84,13 @@ func main() {
 	app.Action = func(c *cli.Context) error {
 		config := &Config{
 			PrivateKeyFile: c.String("private_key_file"),
-			Host:           c.String("host"),
-			Port:           c.Uint("port"),
+			TaintHost:      c.String("taint.host"),
+			TaintPort:      c.Uint("taint.port"),
 			DatabasePath:   c.String("db.path"),
 			ResetDatabase:  c.Bool("db.reset"),
+			WCTLPath:       c.String("wctl.path"),
+			WaveletHost:    c.String("wavelet.host"),
+			WaveletPort:    c.Uint("wavelet.port"),
 		}
 
 		// start the plugin
@@ -92,7 +114,11 @@ func runServer(c *Config) error {
 	jsonConfig, _ := json.MarshalIndent(c, "", "  ")
 	log.Debug().Msgf("Config: %s", string(jsonConfig))
 
-	api.Run(fmt.Sprintf("%s:%d", c.Host, c.Port))
+	// TODO: setup database
+	// TODO: setup main loop to watch the ledger
+
+	// listen for api calls
+	api.Run(fmt.Sprintf("%s:%d", c.TaintHost, c.TaintPort))
 
 	return nil
 }
