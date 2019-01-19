@@ -69,7 +69,7 @@ func (t *TieDotStore) GetReport(scammerAddress string) (*Report, error) {
 	return &report, nil
 }
 
-func (t *TieDotStore) InsertGraph(graph []*model.Vertex) error {
+func (t *TieDotStore) InsertGraph(graph ...*model.Vertex) error {
 	for _, v := range graph {
 
 		b, err := json.Marshal(v)
@@ -102,8 +102,6 @@ func (t *TieDotStore) BFS(address string) error {
 			return err
 		}
 
-		log.Println(v.String())
-
 		for p := range v.Children {
 			if _, ok := visited[p]; !ok {
 				q = append(q, p)
@@ -129,6 +127,24 @@ func (t *TieDotStore) getVertex(address string) (*model.Vertex, error) {
 		return nil, err
 	}
 	return &v, nil
+}
+
+func (t *TieDotStore) updateTaint(address string, taint int) error {
+	key := "addr_" + address
+
+	b, err := t.db.Get([]byte(key), nil)
+	if err != nil {
+		return err
+	}
+
+	var v = &model.Vertex{}
+	err = json.Unmarshal(b, v)
+	if err != nil {
+		return err
+	}
+
+	v.Taint = taint
+	return t.InsertGraph(v)
 }
 
 func (t *TieDotStore) Close() {
