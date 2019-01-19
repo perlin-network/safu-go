@@ -29,6 +29,7 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 	}
 
 	// TODO: spawn process to update the database with scraped values
+	// TODO: add to the list of scam reports the list of accounts that reported it
 
 	return http.StatusOK, res, nil
 }
@@ -40,11 +41,31 @@ func (s *service) queryAddress(ctx *requestContext) (int, interface{}, error) {
 		return http.StatusBadRequest, nil, err
 	}
 
-	// TODO: acutally replace this
+	accountRepScores := s.getAccountRepScores(req.TargetAddress)
+	if accountRepScores > 30 {
+		accountRepScores = 30
+	}
+
+	scamReportScores := s.getScamReportScores(req.TargetAddress)
+	if scamReportScores > 70 {
+		accountRepScores = 70
+	}
+	taintScore := accountRepScores + scamReportScores
+
 	var res = QueryAddressResponse{
 		TargetAddress: req.TargetAddress,
-		TaintScore:    int32(req.Timestamp % 100),
+		TaintScore:    int32(taintScore),
 	}
 
 	return http.StatusOK, res, nil
+}
+
+func (s *service) getAccountRepScores(targetAddress string) int {
+	// TODO:
+	return 0
+}
+
+func (s *service) getScamReportScores(targetAddress string) int {
+	// TODO:
+	return 0
 }
