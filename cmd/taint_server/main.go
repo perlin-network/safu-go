@@ -3,12 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/HouzuoGuo/tiedot/db"
 	"github.com/perlin-network/safu-go/api"
 	"github.com/perlin-network/safu-go/database"
 	"github.com/perlin-network/safu-go/etherscan"
 	"github.com/perlin-network/safu-go/log"
-	"github.com/pkg/errors"
 	"gopkg.in/urfave/cli.v1"
 	"gopkg.in/urfave/cli.v1/altsrc"
 	"os"
@@ -121,11 +119,6 @@ func runServer(c *Config) error {
 	// setup database
 	if c.ResetDatabase {
 		os.RemoveAll(c.DatabasePath)
-	}
-	// (Create if not exist) open a database
-	tiedotDB, err := db.OpenDB(c.DatabasePath)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to create the db")
 	}
 
 	// TODO: setup main loop to watch the ledger
