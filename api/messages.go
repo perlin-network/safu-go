@@ -7,7 +7,7 @@ type SubmitReportRequest struct {
 	VictimAddress  string `json:"victim_address" validate:"required"`
 	Title          string `json:"title" validate:"required"`
 	Content        string `json:"content" validate:"required"`
-	Proof          string `json:"proof" validate:"required"`
+	Proof          string `json:"proof"`
 }
 
 type SubmitReportResponse struct {
