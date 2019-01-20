@@ -1,18 +1,17 @@
 package ledger
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os/exec"
 )
 
 type Ledger struct {
-	PrivateKeyFile       string
-	WCTLPath             string
-	WaveletHost          string
-	WaveletPort          uint
-	SmartContractAddress string
+	PrivateKeyFile  string
+	WCTLPath        string
+	WaveletHost     string
+	WaveletPort     uint
+	SmartContractID string
 }
 
 type Account struct {
@@ -46,10 +45,6 @@ func (l *Ledger) GetReps(accounts []string) (int, error) {
 }
 
 func (l *Ledger) callLedgerGetAccount(accountID string) (*Account, error) {
-	smartContractID, err := hex.DecodeString(l.SmartContractAddress)
-	if err != nil {
-		return nil, err
-	}
 	payload := fmt.Sprintf(`{
 		"account_id": "%s"
 	}`, accountID)
@@ -62,7 +57,7 @@ func (l *Ledger) callLedgerGetAccount(accountID string) (*Account, error) {
 		fmt.Sprintf("%d", l.WaveletPort),
 		"--api.private_key_file",
 		l.PrivateKeyFile,
-		string(smartContractID),
+		l.SmartContractID,
 		"fetch_account_info",
 		payload).Output()
 	if err != nil {

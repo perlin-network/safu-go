@@ -17,15 +17,15 @@ import (
 
 // Config describes how to start the node
 type Config struct {
-	PrivateKeyFile       string
-	TaintHost            string
-	TaintPort            uint
-	DatabasePath         string
-	ResetDatabase        bool
-	WCTLPath             string
-	WaveletHost          string
-	WaveletPort          uint
-	SmartContractAddress string
+	PrivateKeyFile  string
+	TaintHost       string
+	TaintPort       uint
+	DatabasePath    string
+	ResetDatabase   bool
+	WCTLPath        string
+	WaveletHost     string
+	WaveletPort     uint
+	SmartContractID string
 }
 
 func main() {
@@ -79,9 +79,9 @@ func main() {
 			Usage: "Wavelet chain api port `PORT`.",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "contract.address",
-			Value: "TODO",
-			Usage: "Address of the smart contract",
+			Name:  "contract.id",
+			Value: "C-123",
+			Usage: "ID of the smart contract. ie C-123",
 		}),
 	}
 
@@ -92,15 +92,15 @@ func main() {
 
 	app.Action = func(c *cli.Context) error {
 		config := &Config{
-			PrivateKeyFile:       c.String("private_key_file"),
-			TaintHost:            c.String("taint.host"),
-			TaintPort:            c.Uint("taint.port"),
-			DatabasePath:         c.String("db.path"),
-			ResetDatabase:        c.Bool("db.reset"),
-			WCTLPath:             c.String("wctl.path"),
-			WaveletHost:          c.String("wavelet.host"),
-			WaveletPort:          c.Uint("wavelet.port"),
-			SmartContractAddress: c.String("contract.address"),
+			PrivateKeyFile:  c.String("private_key_file"),
+			TaintHost:       c.String("taint.host"),
+			TaintPort:       c.Uint("taint.port"),
+			DatabasePath:    c.String("db.path"),
+			ResetDatabase:   c.Bool("db.reset"),
+			WCTLPath:        c.String("wctl.path"),
+			WaveletHost:     c.String("wavelet.host"),
+			WaveletPort:     c.Uint("wavelet.port"),
+			SmartContractID: c.String("contract.id"),
 		}
 
 		// start the plugin
@@ -134,11 +134,11 @@ func runServer(c *Config) error {
 	var store = database.NewTieDotStore(c.DatabasePath)
 	var esClient = etherscan.NewESClient("4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1")
 	ledger := &ledger.Ledger{
-		PrivateKeyFile:       c.PrivateKeyFile,
-		WCTLPath:             c.WCTLPath,
-		WaveletHost:          c.WaveletHost,
-		WaveletPort:          c.WaveletPort,
-		SmartContractAddress: c.SmartContractAddress,
+		PrivateKeyFile:  c.PrivateKeyFile,
+		WCTLPath:        c.WCTLPath,
+		WaveletHost:     c.WaveletHost,
+		WaveletPort:     c.WaveletPort,
+		SmartContractID: c.SmartContractID,
 	}
 
 	// listen for api calls

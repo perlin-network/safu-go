@@ -70,9 +70,9 @@ func main() {
 			Usage: "TXT file that contain's the wallet's private key `PRIVATE_KEY_FILE`.",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:  "contract.address",
-			Value: "TODO",
-			Usage: "Address of the smart contract",
+			Name:  "contract.id",
+			Value: "C-123",
+			Usage: "ID of the smart contract. ie C-123",
 		}),
 	}
 
@@ -277,14 +277,14 @@ func main() {
 
 func setup(c *cli.Context) (*client.Client, error) {
 	client, err := client.NewClient(&client.Config{
-		PrivateKeyFile:       c.String("private_key_file"),
-		TaintHost:            c.String("taint.host"),
-		TaintPort:            c.Uint("taint.port"),
-		WCTLPath:             c.String("wctl.path"),
-		WaveletHost:          c.String("wavelet.host"),
-		WaveletPort:          c.Uint("wavelet.port"),
-		AccountID:            c.String("account_id"),
-		SmartContractAddress: c.String("contract.address"),
+		PrivateKeyFile:  c.String("private_key_file"),
+		TaintHost:       c.String("taint.host"),
+		TaintPort:       c.Uint("taint.port"),
+		WCTLPath:        c.String("wctl.path"),
+		WaveletHost:     c.String("wavelet.host"),
+		WaveletPort:     c.Uint("wavelet.port"),
+		AccountID:       c.String("account_id"),
+		SmartContractID: c.String("contract.id"),
 	})
 	if err != nil {
 		return nil, err
