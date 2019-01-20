@@ -16,6 +16,7 @@ const (
 	RouteQueryAddress   = "/query_address"
 	RouteAllScamReports = "/all_scam_reports"
 	RouteGraph          = "/graph"
+	RouteEthGraph       = "/eth_graph"
 )
 
 var (
@@ -35,6 +36,7 @@ func (s *service) init(mux *http.ServeMux) {
 	mux.HandleFunc(RouteQueryAddress, s.wrap(s.queryAddress))
 	mux.HandleFunc(RouteAllScamReports, s.wrap(s.allScamReports))
 	mux.HandleFunc(RouteGraph, s.wrap(s.getGraph))
+	mux.HandleFunc(RouteEthGraph, s.wrap(s.allVertices))
 }
 
 // Run runs the API server with a specified set of options.

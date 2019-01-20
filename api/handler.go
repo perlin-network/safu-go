@@ -147,6 +147,47 @@ func (s *service) getGraph(ctx *requestContext) (int, interface{}, error) {
 	return http.StatusOK, list, nil
 }
 
+func (s *service) allVertices(ctx *requestContext) (int, interface{}, error) {
+	type Item struct {
+		Address    string              `json:"address"`
+		Children   map[string]struct{} `json:"children"`
+		Parents    map[string]struct{} `json:"parents"`
+		TaintScore int                 `json:"taint_score"`
+	}
+	pret, err := s.store.GetAllVertices()
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	ret := make([]*Item, len(pret))
+	for i, v := range pret {
+		ret[i] = &Item{
+			Address:  v.Address,
+			Children: v.Children,
+			Parents:  v.Parents,
+		}
+
+		accountRepScores, err := s.getAccountRepScores(v.Address)
+		if err != nil {
+			continue
+		}
+		if accountRepScores > 30 {
+			accountRepScores = 30
+		}
+
+		scamReportScores, err := s.getScamReportScores(v.Address)
+		if err != nil {
+			continue
+		}
+		if scamReportScores > 70 {
+			accountRepScores = 70
+		}
+		ret[i].TaintScore = accountRepScores + scamReportScores
+	}
+
+	return http.StatusOK, ret, nil
+}
+
 func (s *service) allScamReports(ctx *requestContext) (int, interface{}, error) {
 	resp := AllScamReportResponse{
 		Reports: []*ScamReport{},
