@@ -14,7 +14,7 @@ func main() {
 
 	defer os.RemoveAll("/tmp/safu-level")
 
-	err := store.BFSEthAccount("0x4a966d2Ad06F980cD7f8fDc4c4360641aB2C9852", "4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1")
+	err := store.BFSEthAccount("0x4a966d2Ad06F980cD7f8fDc4c4360641aB2C9852", "4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1", func(transaction *database.EthTransaction) {})
 	if err != nil {
 		log.Panicf("BFS error: %s", err)
 	}

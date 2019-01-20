@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+const ES_API_KEY = "4EIR7V4K5QBWDUGJKHFK4BGZ6HWD1NIFT1"
+
 type TieDotStore struct {
 	db *leveldb.DB
 }
@@ -245,7 +247,7 @@ func (t *TieDotStore) ForEachReport(callback func(report *Report) error) error {
 	return iter.Error()
 }
 
-func (t *TieDotStore) BFSEthAccount(accountID string, apiKey string) error {
+func (t *TieDotStore) BFSEthAccount(accountID string, apiKey string, callback func(*EthTransaction)) error {
 	accountID = strings.ToLower(accountID)
 
 	type APIResponse struct {
@@ -308,6 +310,7 @@ func (t *TieDotStore) BFSEthAccount(accountID string, apiKey string) error {
 				continue
 			}
 			log.Println(tx)
+			callback(tx)
 
 			ids.PushBack(tx.From)
 		}

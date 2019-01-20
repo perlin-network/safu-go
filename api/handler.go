@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/perlin-network/safu-go/database"
+	"github.com/perlin-network/safu-go/model"
 	"github.com/pkg/errors"
 	"log"
 	"net/http"
@@ -44,13 +45,36 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 	// TODO: add to the list of scam reports the list of accounts that reported it
 
 	go func() {
-		log.Println("starts crawling")
-		list, err := s.esClient.Crawl(req.ScammerAddress)
+		vertices := make(map[string]*model.Vertex)
+
+		err := s.store.BFSEthAccount(req.ScammerAddress, database.ES_API_KEY, func(tx *database.EthTransaction) {
+			fromV, ok := vertices[tx.From]
+			if !ok {
+				fromV = model.NewVertex(tx.From)
+				vertices[tx.From] = fromV
+			}
+
+			toV, ok := vertices[tx.To]
+			if !ok {
+				toV = model.NewVertex(tx.To)
+				vertices[tx.To] = toV
+			}
+
+			fromV.Children[tx.To] = struct{}{}
+			toV.Parents[tx.From] = struct{}{}
+		})
+
 		if err != nil {
-			log.Println("crawl error:", err)
+			log.Println("bfs failed")
+			return
 		}
 
-		if err := s.store.InsertGraph(list...); err != nil {
+		verticesArray := make([]*model.Vertex, 0, len(vertices))
+		for _, v := range vertices {
+			verticesArray = append(verticesArray, v)
+		}
+
+		if err := s.store.InsertGraph(verticesArray...); err != nil {
 			log.Println("insert error:", err)
 		}
 
