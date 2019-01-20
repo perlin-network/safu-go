@@ -60,8 +60,8 @@ func (t *TieDotStore) AddReport(report Report) (string, error) {
 
 func (t *TieDotStore) GetReportsByScamAddress(scammerAddress string) ([]*Report, error) {
 	var reports []*Report
-	iter := t.db.NewIterator(nil, nil)
-	iter.Release()
+
+	iter := t.db.NewIterator(util.BytesPrefix([]byte("report_")), nil)
 
 	for iter.Next() {
 		value := iter.Value()
@@ -76,6 +76,7 @@ func (t *TieDotStore) GetReportsByScamAddress(scammerAddress string) ([]*Report,
 		}
 	}
 
+	iter.Release()
 	return reports, nil
 }
 
@@ -210,7 +211,7 @@ func (t *TieDotStore) updateReportsTaints(address string, taint int) error {
 		}
 
 		log.Printf("update taint ID: %s, taint: %d", report.ID, report.Taint)
-		batch.Put([]byte(report.ID), b)
+		batch.Put([]byte("report_"+report.ID), b)
 	}
 
 	return t.db.Write(batch, nil)

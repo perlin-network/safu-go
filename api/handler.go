@@ -78,6 +78,8 @@ func (s *service) postScamReport(ctx *requestContext) (int, interface{}, error) 
 			log.Println("insert error:", err)
 		}
 
+		s.store.TaintBFS(req.ScammerAddress, 100)
+
 		log.Println("finish crawling")
 	}()
 
