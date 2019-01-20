@@ -183,6 +183,16 @@ func (client *Client) RegisterScamReport(scammerAddress string, victimAddress st
 	}, nil
 }
 
+func (client *Client) AllScamReports() (interface{}, error) {
+	var taintResp api.AllScamReportResponse
+	if err := client.callTaintServer(api.RouteAllScamReports, nil, &taintResp); err != nil {
+		return nil, err
+	}
+	return taintResp, nil
+}
+
+//////////////////////////////////////////////
+
 func getKeyPair(privateKeyFile string) (*crypto.KeyPair, error) {
 
 	bytes, err := ioutil.ReadFile(privateKeyFile)
