@@ -1,18 +1,29 @@
 package database
 
 import (
+	"container/list"
 	"encoding/json"
+	"fmt"
 	"github.com/gofrs/uuid"
 	"github.com/perlin-network/safu-go/model"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
+	"time"
 )
 
 type TieDotStore struct {
 	db *leveldb.DB
+}
+
+type EthTransaction struct {
+	Hash string `json:"hash"`
+	From string `json:"from"`
+	To   string `json:"to"`
 }
 
 func NewTieDotStore(dir string) *TieDotStore {
@@ -232,6 +243,77 @@ func (t *TieDotStore) ForEachReport(callback func(report *Report) error) error {
 	}
 
 	return iter.Error()
+}
+
+func (t *TieDotStore) BFSEthAccount(accountID string, apiKey string) error {
+	accountID = strings.ToLower(accountID)
+
+	type APIResponse struct {
+		Status  string            `json:"status"`
+		Message string            `json:"message"`
+		Result  []*EthTransaction `json:"result"`
+	}
+	ids := list.New()
+	ids.PushFront(accountID)
+	searched := make(map[string]struct{})
+	client := &http.Client{}
+
+	count := 0
+
+	for ids.Len() > 0 {
+		if count == 30 {
+			break
+		}
+		count++
+		time.Sleep(time.Millisecond * 250)
+
+		accountID = ids.Front().Value.(string)
+		ids.Remove(ids.Front())
+
+		if len(searched) >= 256 {
+			return nil
+		}
+		if _, ok := searched[accountID]; ok {
+			continue
+		}
+		searched[accountID] = struct{}{}
+
+		resp, err := client.Get(fmt.Sprintf(
+			"http://api.etherscan.io/api?module=account&action=txlist&address=%s&startblock=0&endblock=99999999&sort=desc&apikey=%s",
+			accountID, apiKey,
+		))
+		if err != nil {
+			log.Printf("unable to retrieve transaction list: %+v\n", err)
+			continue
+		}
+
+		defer resp.Body.Close()
+		_out, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("unable to decode output: %+v\n", err)
+			continue
+		}
+
+		var out APIResponse
+		err = json.Unmarshal(_out, &out)
+		if err != nil {
+			log.Printf("unable to unmarshal output: %+v\n", err)
+			continue
+		}
+
+		for _, tx := range out.Result {
+			tx.From = strings.ToLower(tx.From)
+			tx.To = strings.ToLower(tx.To)
+			if tx.To != accountID {
+				continue
+			}
+			log.Println(tx)
+
+			ids.PushBack(tx.From)
+		}
+	}
+
+	return nil
 }
 
 func (t *TieDotStore) Close() {
