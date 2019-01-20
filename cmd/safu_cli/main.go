@@ -246,6 +246,24 @@ func main() {
 				return nil
 			},
 		},
+		{
+			Name:  "all_scam_report",
+			Usage: "get all scam reports",
+			Flags: taintFlags,
+			Action: func(c *cli.Context) error {
+				client, err := setup(c)
+				if err != nil {
+					return err
+				}
+				res, err := client.AllScamReports()
+				if err != nil {
+					return err
+				}
+				jsonOut, _ := json.Marshal(res)
+				fmt.Printf("%s\n", jsonOut)
+				return nil
+			},
+		},
 	}
 
 	sort.Sort(cli.FlagsByName(app.Flags))

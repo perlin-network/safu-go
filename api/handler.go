@@ -92,6 +92,59 @@ func (s *service) queryAddress(ctx *requestContext) (int, interface{}, error) {
 	return http.StatusOK, res, nil
 }
 
+func (s *service) getGraph(ctx *requestContext) (int, interface{}, error) {
+	graph, err := s.store.GetAllVertices()
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	type vertex struct {
+		Address string `json:"address"`
+		//Parents  []string `json:"parents"`
+		Children []string `json:"children"`
+	}
+
+	var list []*vertex
+
+	for _, g := range graph {
+		v := vertex{
+			Address: g.Address,
+		}
+
+		for c := range g.Children {
+			v.Children = append(v.Children, c)
+		}
+
+		list = append(list, &v)
+	}
+
+	return http.StatusOK, list, nil
+}
+
+func (s *service) allScamReports(ctx *requestContext) (int, interface{}, error) {
+	resp := AllScamReportResponse{
+		Reports: []*ScamReport{},
+	}
+	s.store.ForEachReport(func(report *database.Report) error {
+		sr := &ScamReport{
+			ID:             report.ID,
+			Timestamp:      report.Timestamp,
+			AccountID:      report.AccountID,
+			ScammerAddress: report.ScammerAddress,
+			VictimAddress:  report.VictimAddress,
+			Title:          report.Title,
+			Content:        report.Content,
+			Proof:          report.Proof,
+			Taint:          report.Taint,
+		}
+		resp.Reports = append(resp.Reports, sr)
+		return nil
+	})
+	return http.StatusOK, resp, nil
+}
+
+//////////////////////////////////////////////
+
 func (s *service) getAccountRepScores(targetAddress string) (int, error) {
 	reports, err := s.store.GetReportsByScamAddress(targetAddress)
 	if err != nil {
@@ -118,34 +171,4 @@ func (s *service) getScamReportScores(targetAddress string) (int, error) {
 		taint = 70
 	}
 	return taint, nil
-}
-
-func (s *service) getGraph(ctx *requestContext) (int, interface{}, error) {
-	graph, err := s.store.GetAllVertices()
-	if err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
-
-
-	type vertex struct {
-		Address  string   `json:"address"`
-		//Parents  []string `json:"parents"`
-		Children []string `json:"children"`
-	}
-
-	var list []*vertex
-
-	for _, g := range graph {
-		v := vertex{
-			Address: g.Address,
-		}
-
-		for c := range g.Children {
-			v.Children = append(v.Children, c)
-		}
-
-		list = append(list, &v)
-	}
-
-	return http.StatusOK, list, nil
 }

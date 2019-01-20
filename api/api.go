@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	RoutePostScamRepot = "/post_scam_report"
-	RouteQueryAddress  = "/query_address"
-	RouteGraph = "/graph"
+	RoutePostScamRepot  = "/post_scam_report"
+	RouteQueryAddress   = "/query_address"
+	RouteAllScamReports = "/all_scam_reports"
+	RouteGraph          = "/graph"
 )
 
 var (
@@ -32,6 +33,7 @@ type service struct {
 func (s *service) init(mux *http.ServeMux) {
 	mux.HandleFunc(RoutePostScamRepot, s.wrap(s.postScamReport))
 	mux.HandleFunc(RouteQueryAddress, s.wrap(s.queryAddress))
+	mux.HandleFunc(RouteAllScamReports, s.wrap(s.allScamReports))
 	mux.HandleFunc(RouteGraph, s.wrap(s.getGraph))
 }
 
